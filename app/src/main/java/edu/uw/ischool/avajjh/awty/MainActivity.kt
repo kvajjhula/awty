@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.SystemClock
@@ -12,6 +13,8 @@ import android.text.TextWatcher
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.android.material.textfield.TextInputEditText
 
 class MainActivity : AppCompatActivity() {
@@ -35,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         phoneText.addTextChangedListener(textWatcher)
         numText.addTextChangedListener(textWatcher)
 
-        startButton.setOnClickListener() {
+        startButton.setOnClickListener {
             isServiceRunning = !isServiceRunning
 
             val intent = Intent(this, MyBroadcastReceiver::class.java)
@@ -43,15 +46,13 @@ class MainActivity : AppCompatActivity() {
             intent.putExtra("phone", phoneText.text.toString())
             val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
-            val alarmManager : AlarmManager =  getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
+            val alarmManager: AlarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
             if (isServiceRunning) {
                 startButton.text = "Stop"
                 val intervalMillis = numText.text.toString().toLong() * 60 * 1000
-                Log.i("tag", "isServiceRunning reached")
 
-                // Schedule the alarm
+                // Schedule the alarm for SMS
                 alarmManager.setInexactRepeating(
                     AlarmManager.ELAPSED_REALTIME_WAKEUP,
                     SystemClock.elapsedRealtime() + intervalMillis,
@@ -61,7 +62,26 @@ class MainActivity : AppCompatActivity() {
 
             } else {
                 startButton.text = "Start"
+                // Cancel the alarm
                 alarmManager.cancel(pendingIntent)
+            }
+        }
+
+    }
+
+    companion object {
+        private const val SEND_SMS_PERMISSION_REQUEST_CODE = 101
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            SEND_SMS_PERMISSION_REQUEST_CODE -> {
+                if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    // permission granted?
+                } else {
+                }
+                return
             }
         }
     }
